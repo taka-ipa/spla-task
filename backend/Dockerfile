@@ -1,4 +1,5 @@
 FROM php:8.2-cli
+# PHPの公式イメージをベースにする
 
 RUN apt-get update && apt-get install -y \
     git \
@@ -7,4 +8,5 @@ RUN apt-get update && apt-get install -y \
     zip \
     && docker-php-ext-install zip pdo_mysql
 
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer 
+#composer（PHPのパッケージ管理ツール）をインストール

@@ -1,4 +1,15 @@
-node_modules
-vendor
-.env
+# ここはgitにpushしないファイルを記載する場所です。
+
+# Laravel
+/vendor
+/.env
+
+# Node.js
+/node_modules
+
+# Docker（必要に応じて）
+*.log
+*.pid
+docker/mysql-data/
+
 
