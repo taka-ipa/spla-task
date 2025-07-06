@@ -12,6 +12,7 @@ class TaskController extends Controller
             ['id' => 1, 'title' => 'エイム練習', 'status' => '○'],
             ['id' => 2, 'title' => '立ち回り反省', 'status' => '△'],
             ['id' => 3, 'title' => '打開反省', 'status' => '×'],
+            ['id' => 4, 'title' => 'イカランプ確認', 'status' => '△']
         ]);
     }
 }
