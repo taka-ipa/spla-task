@@ -21,8 +21,6 @@ return [
 
     'allowed_origins' => [env('FRONTEND_URL', 'http://localhost:3000')],
 
-    'credentials' => true,
-
     'allowed_origins_patterns' => [],
 
     'allowed_headers' => ['*'],
