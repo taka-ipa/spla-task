@@ -18,5 +18,13 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions) {
         //
     })
+    ->withMiddleware(function ($middleware) {
+        $middleware->alias([
+            'cors' => \Illuminate\Http\Middleware\HandleCors::class,
+        ]);
+    })
+    ->withMiddleware(function ($middleware) {
+        $middleware->prepend(\Illuminate\Http\Middleware\HandleCors::class);
+    })
     ->create();
 
