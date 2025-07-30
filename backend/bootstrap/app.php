@@ -3,28 +3,27 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Middleware\HandleCors;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
-        web: __DIR__.'/../routes/web.php', //通常のWebルート（ブラウザで表示する画面用）
-        api: __DIR__.'/../routes/api.php', //API用ルート（Reactなどから叩くJSON形式のデータ用）
-        commands: __DIR__.'/../routes/console.php', //Artisanコマンド定義用ルート（routes/console.phpで定義）
-        health: '/up', //ヘルスチェック用のエンドポイント（例： /up にアクセス → 200返す）
+        web: __DIR__.'/../routes/web.php', // 通常のWebルート
+        api: __DIR__.'/../routes/api.php', // APIルート
+        commands: __DIR__.'/../routes/console.php', // Artisanコマンド定義
+        health: '/up', // ヘルスチェック
     )
 
     ->withMiddleware(function (Middleware $middleware) {
-        //
+        // HandleCorsをCORS対応のためにプリペンド
+        $middleware->prepend(HandleCors::class);
+
+        // aliasは必要ないので削除してOK（使ってなければ）
     })
+
     ->withExceptions(function (Exceptions $exceptions) {
         //
     })
-    ->withMiddleware(function ($middleware) {
-        $middleware->alias([
-            'cors' => \Illuminate\Http\Middleware\HandleCors::class,
-        ]);
-    })
-    ->withMiddleware(function ($middleware) {
-        $middleware->prepend(\Illuminate\Http\Middleware\HandleCors::class);
-    })
+
     ->create();
+
 
