@@ -1,26 +1,42 @@
-'use client'
+'use client';
 
-import { useEffect } from 'react'
-import axios from 'axios'
+import { useEffect, useState } from 'react';
+import api from '@/lib/api';
+
+type User = { id: number; name: string; email: string };
 
 export default function Home() {
+  const [user, setUser] = useState<User | null>(null);
+
   useEffect(() => {
-    axios
-  .get("http://127.0.0.1:8000/api/tasks", {
-    withCredentials: true,
-  })
-  .then((res) => {
-    console.log("✅ 成功:", res.data);
-  })
-  .catch((err) => {
-    console.error("❌ 失敗:", err);
-  });
-  }, [])
+    api.get<User>('/api/user')
+      .then(res => setUser(res.data))
+      .catch(() => setUser(null));
+  }, []);
+
+  const logout = async () => {
+    try {
+      await api.post('/api/logout'); // Breeze(API) は現在のトークンをrevokeする実装が入っている想定
+    } catch {}
+    localStorage.removeItem('token');
+    setUser(null);
+  };
 
   return (
     <main className="p-8">
-      <h1 className="text-2xl font-bold">課題リスト（仮表示）</h1>
-      <p>LaravelのAPIから取得したデータは console に出力されます！</p>
+      <h1 className="text-2xl font-bold mb-4">ホーム</h1>
+      {user ? (
+        <div className="space-y-2">
+          <p>ようこそ、{user.name} さん</p>
+          <button onClick={logout} className="bg-gray-800 text-white px-3 py-1 rounded">ログアウト</button>
+        </div>
+      ) : (
+        <div className="space-x-3">
+          <a href="/login" className="underline">ログイン</a>
+          <a href="/register" className="underline">新規登録</a>
+        </div>
+      )}
     </main>
-  )
+  );
 }
+
