@@ -1,57 +1,61 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import api from '@/lib/api';
-
-type LoginResponse = {
-  token?: string;
-  access_token?: string;
-  user?: { id: number; name: string; email: string };
-};
+import { useRouter, useSearchParams } from 'next/navigation';
+import { login } from '@/lib/auth';
+import { useAuthStore } from '@/store/auth';
 
 export default function LoginPage() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const router = useRouter();
-  const [form, setForm] = useState({ email: '', password: '' });
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const sp = useSearchParams();
+  const hydrate = useAuthStore((s) => s.hydrate);
 
-  const onChange = (e: React.ChangeEvent<HTMLInputElement>) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
+  // 生のnextを取得（クエリになければ null）
+  const rawNext = sp?.get('next');
 
-  const onSubmit = async (e: React.FormEvent) => {
+  // 文字列で、先頭が'/'の時だけ採用。それ以外は安全に /dashboard へ
+  const nextPath = typeof rawNext === 'string' && rawNext.startsWith('/')
+    ? rawNext
+    : '/dashboard';
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setLoading(true);
+    setError('');
     try {
-      const res = await api.post<LoginResponse>('/api/login', form);
-      const token = res.data.token ?? res.data.access_token;
-      if (!token) throw new Error('No token in response');
-
-      localStorage.setItem('token', token);
-      router.push('/');
-    } catch (err) {
-      console.error(err);
-      setError('メールまたはパスワードが違います。');
-    } finally {
-      setLoading(false);
+      await login(email, password); // /api/login
+      await hydrate();              // /api/user -> store.user 反映
+      router.push(nextPath);        // ← ここは必ず文字列
+    } catch (err: any) {
+      setError(err?.response?.data?.message ?? 'ログインに失敗しました');
     }
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10">
-      <h1 className="text-2xl font-bold mb-6">ログイン</h1>
-      <form onSubmit={onSubmit} className="flex flex-col gap-4">
-        <input name="email" type="email" placeholder="メールアドレス" value={form.email} onChange={onChange} className="border px-3 py-2 rounded" required />
-        <input name="password" type="password" placeholder="パスワード" value={form.password} onChange={onChange} className="border px-3 py-2 rounded" required />
-        <button type="submit" disabled={loading} className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-60">
-          {loading ? 'ログイン中…' : 'ログイン'}
+    <div className="max-w-sm mx-auto mt-20 p-4 border rounded">
+      <h1 className="text-xl mb-4">ログイン</h1>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <input
+          type="email"
+          placeholder="メールアドレス"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="w-full border p-2 rounded"
+        />
+        <input
+          type="password"
+          placeholder="パスワード"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="w-full border p-2 rounded"
+        />
+        {error && <p className="text-red-500 text-sm">{error}</p>}
+        <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">
+          ログイン
         </button>
-        {error && <p className="text-red-600">{error}</p>}
       </form>
-      <p className="mt-3 text-sm text-gray-500">
-        アカウントがない？ <a className="underline" href="/register">新規登録</a>
-      </p>
     </div>
   );
 }

@@ -1,19 +1,30 @@
-import axios from "axios";
+// lib/api.ts
+import axios from 'axios';
 
-const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000",
-  headers: { "Content-Type": "application/json" },
-  withCredentials: false, // トークン方式なので不要
+export const api = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_API_BASE ?? 'http://localhost:8000',
 });
 
-// 以降の全APIに Bearer 自動付与
 api.interceptors.request.use((config) => {
-  if (typeof window !== "undefined") {
-    const t = localStorage.getItem("token");
-    if (t) config.headers.Authorization = `Bearer ${t}`;
-  }
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
+
+api.interceptors.response.use(
+  (res) => res,
+  (error) => {
+    if (error?.response?.status === 401) {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('token');
+        if (!location.pathname.startsWith('/login')) {
+          location.href = `/login?next=${encodeURIComponent(location.pathname)}`;
+        }
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 export default api;
 

@@ -4,6 +4,8 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\HandleCors;
+use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
+use Illuminate\Routing\Middleware\SubstituteBindings;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -14,18 +16,17 @@ return Application::configure(basePath: dirname(__DIR__))
     )
 
     ->withMiddleware(function (Middleware $middleware) {
-        $middleware->api(prepend: [
-            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
-        ]);
+    // SPA用の状態保持ミドルウェアは不要（Bearerトークン運用のため削除）
+    // $middleware->api(prepend: [
+    //     \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+    // ]);
 
-        $middleware->alias([
-            'verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,
-        ]);
+    $middleware->alias([
+        'verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,
+    ]);
 
-        // HandleCorsをCORS対応のためにプリペンド
-        $middleware->prepend(HandleCors::class);
-
-        // aliasは必要ないので削除してOK（使ってなければ）
+    // CORS対応
+    $middleware->prepend(HandleCors::class);
     })
 
     ->withExceptions(function (Exceptions $exceptions) {
