@@ -25,3 +25,8 @@ Route::get('/debug-key', fn () => response()->json([
     'config_has' => (bool) config('app.key'),
     'config_key' => config('app.key'),
 ]));
+
+// デバッグ用のpingエンドポイント
+if (app()->environment('local')) {
+    Route::get('/ping', fn() => 'pong');
+}
