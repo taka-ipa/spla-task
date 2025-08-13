@@ -1,0 +1,84 @@
+version: "3.9"
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: spla-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: app_db
+      MYSQL_USER: app_user
+      MYSQL_PASSWORD: app_pass
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_0900_ai_ci
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - "3307:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-prootpass"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: spla-backend
+    working_dir: /var/www/html
+    volumes:
+      - ./backend:/var/www/html
+      - backend_vendor:/var/www/html/vendor
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    # ← ここを追加：.env をそのまま環境変数としても注入
+    env_file:
+      - ./backend/.env
+    # （environment: にAPP_KEYは書かない）
+    command:
+      - sh
+      - -lc
+      - |
+          set -e
+          composer install
+          [ -f .env ] || cp .env.example .env
+          # .envにbase64キーが無ければだけ生成（既にあれば何もしない）
+          grep -q '^APP_KEY=base64:' .env || php artisan key:generate --force
+          php artisan config:clear
+          php artisan migrate --force
+          # 開発は内蔵サーバを直起動
+          php -S 0.0.0.0:8000 -t public public/index.php
+
+  frontend:
+    platform: linux/arm64       # Apple Siliconなら arm64、Intel Macなら linux/amd64 に
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: spla-frontend
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+      - node_modules:/app/node_modules
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
+      CHOKIDAR_USEPOLLING: "1"
+      WATCHPACK_POLLING: "1"
+      NODE_OPTIONS: --max-old-space-size=2048
+      # （前テストの）NEXT_DISABLE_SWC が残っていれば一旦消してOK
+    ports:
+      - "3000:3000"
+    command:
+      - sh
+      - -lc
+      - |
+        npm ci || npm install
+        npx --yes next telemetry disable || true
+        npm run dev
+
+volumes:
+  db_data:
+  backend_vendor:
+  node_modules:

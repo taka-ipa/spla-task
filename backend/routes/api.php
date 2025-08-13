@@ -14,3 +14,14 @@ Route::middleware('auth:sanctum')->group(function () {
     });
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 });
+
+Route::get('/env-check', function () {
+    return response()->json([
+        'app_key' => env('APP_KEY'),
+        'app_env' => env('APP_ENV'),
+    ]);
+});
+Route::get('/debug-key', fn () => response()->json([
+    'config_has' => (bool) config('app.key'),
+    'config_key' => config('app.key'),
+]));
