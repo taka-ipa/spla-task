@@ -27,4 +27,8 @@ class AppServiceProvider extends ServiceProvider
         \Illuminate\Support\Facades\Route::middleware('web')
             ->group(base_path('routes/web.php'));
     }
+
+    protected $policies = [
+    \App\Models\Task::class => \App\Policies\TaskPolicy::class,
+];
 }
