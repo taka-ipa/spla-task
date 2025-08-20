@@ -1,5 +1,5 @@
 // app/login/actions.ts
-import { api } from '@/lib/api';
+import api from '@/lib/api';
 
 export async function loginAndFetchUser(email: string, password: string) {
   // Breeze(API)なら /login が token と user を返す構成がデフォ

@@ -2,7 +2,7 @@
 'use client';
 
 import { create } from 'zustand';
-import { api } from '@/lib/api';
+import api from '@/lib/api';
 
 export type User = {
   id: number;
