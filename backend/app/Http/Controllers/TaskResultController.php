@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\TaskResult;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 
 class TaskResultController extends Controller
 {
@@ -31,5 +32,36 @@ class TaskResultController extends Controller
         );
 
         return response()->json($result->fresh()->loadMissing(['task']), 201);
+    }
+
+    public function index(Request $request)
+    {
+        $user = $request->user();
+
+        $request->validate([
+            'date' => ['required', 'date_format:Y-m-d'],
+        ]);
+        $date = $request->query('date');
+
+        // 有効な自分のタスク一覧に、当日の評価を左外部結合で付与
+        $rows = DB::table('tasks')
+            ->leftJoin('task_results', function ($join) use ($user, $date) {
+                $join->on('task_results.task_id', '=', 'tasks.id')
+                    ->where('task_results.user_id', $user->id)
+                    ->where('task_results.date', $date);
+            })
+            ->where('tasks.user_id', $user->id)
+            ->whereNull('tasks.deleted_at')
+            ->where('tasks.is_active', true)
+            ->orderBy('tasks.id')
+            ->get([
+                'tasks.id as task_id',
+                'tasks.title',
+                'tasks.icon',
+                'task_results.id as result_id',
+                'task_results.rating',
+            ]);
+
+        return response()->json($rows);
     }
 }

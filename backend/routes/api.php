@@ -40,3 +40,8 @@ if (app()->environment('local')) {
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/task-results', [TaskResultController::class, 'store']);
 });
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/task-results', [TaskResultController::class, 'index']); // ← 追加
+    Route::post('/task-results', [TaskResultController::class, 'store']);
+});
