@@ -1,12 +1,10 @@
 'use client';
 
 import { useTodayTasks } from "@/hooks/useTodayTasks";
-
-const ratingLabel = (r: 'maru'|'sankaku'|'batsu'|null) =>
-  r === 'maru' ? '○' : r === 'sankaku' ? '△' : r === 'batsu' ? '×' : '—';
+import { RatingButtons } from "@/components/RatingButtons";
 
 export default function TodayPage() {
-  const { items, loading, err } = useTodayTasks();
+  const { items, loading, err, savingTaskId, saveRating } = useTodayTasks();
 
   if (loading) {
     return (
@@ -36,22 +34,33 @@ export default function TodayPage() {
       <h1 className="text-xl font-bold">今日の課題一覧</h1>
 
       <ul className="grid gap-3">
-        {items.map((it) => (
-          <li key={it.taskId} className="flex items-center justify-between rounded-2xl border p-4">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">{it.icon ?? '📝'}</span>
-              <div className="flex flex-col">
-                <span className="font-medium">{it.title}</span>
-                <span className="text-xs text-gray-500">ID: {it.taskId}</span>
+        {items.map((it) => {
+          const disabled = savingTaskId === it.taskId;
+          return (
+            <li
+              key={it.taskId}
+              className="flex items-center justify-between rounded-2xl border p-4"
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{it.icon ?? "📝"}</span>
+                <div className="flex flex-col">
+                  <span className="font-medium">{it.title}</span>
+                  <span className="text-xs text-gray-500">ID: {it.taskId}</span>
+                </div>
               </div>
-            </div>
 
-            {/* いまは表示のみ。後で○△×入力UIをここに置く */}
-            <div className="text-lg font-bold tabular-nums">
-              {ratingLabel(it.rating)}
-            </div>
-          </li>
-        ))}
+              <RatingButtons
+                value={it.rating}
+                disabled={disabled}
+                onChange={(r) =>
+                  saveRating(it.taskId, r).catch(() =>
+                    alert("保存に失敗しました。もう一度お試しください。")
+                  )
+                }
+              />
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
