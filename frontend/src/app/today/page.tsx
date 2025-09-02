@@ -1,10 +1,38 @@
 'use client';
 
+import { useEffect, useState } from "react";
 import { useTodayTasks } from "@/hooks/useTodayTasks";
 import { RatingButtons } from "@/components/RatingButtons";
 
+type Flash = { message: string; key: number } | null;
+
 export default function TodayPage() {
   const { items, loading, err, savingTaskId, saveRating } = useTodayTasks();
+  const [flash, setFlash] = useState<Flash>(null);
+
+  // トーストを3秒で消す
+  useEffect(() => {
+    if (!flash) return;
+    const t = setTimeout(() => setFlash(null), 3000);
+    return () => clearTimeout(t);
+  }, [flash]);
+
+  const handleChange = (taskId: number, r: "maru" | "sankaku" | "batsu" | null) => {
+    saveRating(taskId, r)
+      .then((result) => {
+        if (result === "noop") return;
+        const msg =
+          result === "created"
+            ? "保存しました"
+            : result === "updated"
+            ? "更新しました"
+            : "未選択に戻しました";
+        setFlash({ message: msg, key: Date.now() });
+      })
+      .catch(() => {
+        alert("保存に失敗しました。もう一度お試しください。");
+      });
+  };
 
   if (loading) {
     return (
@@ -62,6 +90,19 @@ export default function TodayPage() {
           );
         })}
       </ul>
+
+      {/* 成功トースト */}
+      {flash && (
+        <div
+          key={flash.key}
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 rounded-xl border bg-white/90 px-4 py-2 shadow-lg backdrop-blur-sm"
+          role="status"
+          aria-live="polite"
+        >
+          <span className="mr-2">✅</span>
+          <span className="font-medium">{flash.message}</span>
+        </div>
+      )}
     </div>
   );
 }

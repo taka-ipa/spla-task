@@ -1,4 +1,3 @@
-// src/hooks/useTodayTasks.ts
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
@@ -15,9 +14,11 @@ export type TodayItem = {
   taskId: number;
   title: string;
   icon?: string | null;
-  rating: Rating;       // 'maru' | 'sankaku' | 'batsu' | null
-  resultId?: number;    // 既存レコードがある場合
+  rating: Rating;        // 'maru' | 'sankaku' | 'batsu' | null
+  resultId?: number;     // 既存レコードがある場合
 };
+
+export type SaveResult = 'created' | 'updated' | 'cleared' | 'noop';
 
 export function useTodayTasks() {
   const [items, setItems] = useState<TodayItem[]>([]);
@@ -33,7 +34,6 @@ export function useTodayTasks() {
         const date = todayJST();
         const [results, tasks] = await Promise.all([
           fetchTaskResultsByDate(date),
-          // 結果に task が含まれない場合に備えて全タスク取得
           fetchTasks().catch(() => [] as Task[]),
         ]);
 
@@ -63,7 +63,6 @@ export function useTodayTasks() {
           });
         }
 
-        // 任意：未評価→○→△→× の順で表示
         const order = { null: 0, maru: 1, sankaku: 2, batsu: 3 } as const;
         base.sort(
           (a, b) =>
@@ -82,15 +81,18 @@ export function useTodayTasks() {
   }, []);
 
   /** ○△×保存（同じボタン再クリックで null に戻す＝トグル） */
-  const saveRating = useCallback(
-    async (taskId: number, next: Rating) => {
+  const saveRating: (taskId: number, next: Rating) => Promise<SaveResult> =
+    useCallback(async (taskId, next) => {
       const target = items.find((i) => i.taskId === taskId);
-      if (!target) return;
+      if (!target) return 'noop';
 
-      // トグル：同じ値なら未選択(null)へ
       const newRating: Rating = target.rating === next ? null : next;
 
-      // 楽観更新
+      // 新規で未選択 → noop
+      if (target.resultId == null && newRating === null) {
+        return 'noop';
+      }
+
       const prev = items;
       const optimistic = items.map((i) =>
         i.taskId === taskId ? { ...i, rating: newRating } : i
@@ -100,34 +102,28 @@ export function useTodayTasks() {
 
       try {
         if (target.resultId) {
-          // 既存レコード → 更新（null も許容）
           await updateTaskResult(target.resultId, newRating);
+          return newRating === null ? 'cleared' : 'updated';
         } else {
-          // 新規作成：未選択(null)は送らない
-          if (newRating !== null) {
-            const created = await postTaskResult({
-              task_id: taskId,
-              date: todayJST(),
-              rating: newRating,
-            });
-            // 作成された result の id を反映
-            setItems((cur) =>
-              cur.map((i) =>
-                i.taskId === taskId ? { ...i, resultId: created.id } : i
-              )
-            );
-          }
+          const created = await postTaskResult({
+            task_id: taskId,
+            date: todayJST(),
+            rating: newRating as Exclude<Rating, null>,
+          });
+          setItems((cur) =>
+            cur.map((i) =>
+              i.taskId === taskId ? { ...i, resultId: created.id } : i
+            )
+          );
+          return 'created';
         }
       } catch (e) {
-        // 失敗したら元に戻す
-        setItems(prev);
+        setItems(prev); // ロールバック
         throw e;
       } finally {
         setSavingTaskId(null);
       }
-    },
-    [items]
-  );
+    }, [items]);
 
   return { items, loading, err, savingTaskId, saveRating };
 }
