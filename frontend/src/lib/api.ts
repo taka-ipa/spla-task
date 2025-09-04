@@ -2,6 +2,7 @@
 import axios, { AxiosError } from "axios";
 import type { Task, TaskResult, Rating } from "./types";
 
+
 /** ====== Axios 基本設定 ====== */
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, "") || "http://localhost:8000";
@@ -127,6 +128,16 @@ export async function postTaskResult(params: {
 //    Laravel側の想定: PUT /api/task-results/:id  { rating }
 export async function updateTaskResult(resultId: number, rating: Rating): Promise<TaskResult> {
   const { data } = await api.put(`/api/task-results/${resultId}`, { rating });
+  return data;
+}
+
+// 追加: task_id + date で更新するAPI（あなたのバックエンドに合わせて）
+export async function upsertTaskResult(params: {
+  task_id: number;
+  date: string;
+  rating: Rating; // null もそのまま送る（サーバが許容するならクリア扱い）
+}): Promise<TaskResult> {
+  const { data } = await api.post("/api/task-results", params);
   return data;
 }
 
