@@ -1,6 +1,7 @@
 // frontend/lib/api.ts
 import axios, { AxiosError } from "axios";
 import type { Task, TaskResult, Rating } from "./types";
+import type { TaskResultsSummaryResponse } from '@/types/summary';
 
 
 /** ====== Axios 基本設定 ====== */
@@ -8,7 +9,8 @@ const BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, "") || "http://localhost:8000";
 
 export const api = axios.create({
-  baseURL: BASE_URL,              // ex) http://localhost:8000
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL, // Vercelなどで環境変数指定する場合
+  // baseURL: BASE_URL, // ローカル開発用のデフォルト
   withCredentials: false,         // トークン(Bearer)方式なので false
   headers: {
     Accept: "application/json",
@@ -139,6 +141,15 @@ export async function upsertTaskResult(params: {
 }): Promise<TaskResult> {
   const { data } = await api.post("/api/task-results", params);
   return data;
+}
+
+// 5) 課題結果のサマリ取得
+export async function getTaskResultsSummary(params?: { from?: string; to?: string }) {
+  const res = await api.get<TaskResultsSummaryResponse>(
+    '/api/task-results/summary',
+    { params }
+  );
+  return res.data;
 }
 
 export default api;
