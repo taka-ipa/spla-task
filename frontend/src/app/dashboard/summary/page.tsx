@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { getTaskResultsSummary } from '@/lib/api';
 import type { TaskResultsSummaryResponse } from '@/types/summary';
+import SummaryCharts from '@/components/SummaryCharts';
 
 export default function SummaryPage() {
   const [data, setData] = useState<TaskResultsSummaryResponse | null>(null);
@@ -64,6 +65,9 @@ export default function SummaryPage() {
           );
         })}
       </div>
+
+      {/* グラフ表示 */}
+      <SummaryCharts data={data} />
     </div>
   );
 }
