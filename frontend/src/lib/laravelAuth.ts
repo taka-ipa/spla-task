@@ -1,4 +1,4 @@
-// lib/auth.ts
+
 import { api } from './api';
 import { useAuthStore } from '@/store/auth'; // なくてもOK（後述）
 
