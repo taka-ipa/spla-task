@@ -1,5 +1,5 @@
 import axios, { AxiosError } from "axios";
-import { authAdapter } from "@/lib/auth"; // ★ 追加：FirebaseのIDトークン取得に使う
+import { authAdapter } from "@/lib/GoogleAuth"; // ★ 追加：FirebaseのIDトークン取得に使う
 import type { Task, TaskResult, Rating } from "./types";
 import type { TaskResultsSummaryResponse } from "@/types/summary";
 
@@ -52,27 +52,20 @@ if (AUTH_PROVIDER !== "firebase" && typeof window !== "undefined") {
 /** ====== インターセプタ ====== */
 api.interceptors.request.use(async (config) => {
   if (AUTH_PROVIDER === "firebase") {
-    // ★ Firebase：毎回最新のIDトークンを取得してAuthorizationに付与
-    const idToken = await authAdapter.getIdToken();
-    if (idToken) {
-      config.headers = config.headers ?? {};
-      config.headers.Authorization = `Bearer ${idToken}`;
-    } else {
-      // 未ログイン時はヘッダを外す
-      if (config.headers && "Authorization" in config.headers) {
-        delete (config.headers as any).Authorization;
-      }
-    }
-  } else {
-    // ★ Laravel：従来のlocalStorage保険
-    if (typeof window !== "undefined" && !(config.headers as any)?.Authorization) {
-      const token = localStorage.getItem(TOKEN_KEY);
-      if (token) {
-        config.headers = config.headers ?? {};
-        (config.headers as any).Authorization = `Bearer ${token}`;
-      }
-    }
+  let idToken = await authAdapter.getIdToken();
+  if (!idToken) {
+    // 直後は currentUser がまだ乗らない事があるので少し待って再取得
+    await new Promise(r => setTimeout(r, 200));
+    idToken = await authAdapter.getIdToken();
   }
+
+  config.headers = config.headers ?? {};
+  if (idToken) {
+    config.headers.Authorization = `Bearer ${idToken}`;
+  } else {
+    delete (config.headers as any).Authorization;
+  }
+}
   return config;
 });
 

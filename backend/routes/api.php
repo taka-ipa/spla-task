@@ -8,6 +8,7 @@ use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TaskResultController;
 use App\Http\Controllers\TaskResultSummaryController;
 use App\Http\Controllers\FirebaseLoginController;
+use App\Http\Middleware\FirebaseAuthMiddleware;
 
 Route::post('/register', [RegisteredUserController::class, 'store'])->name('register');
 Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login');
@@ -62,6 +63,6 @@ Route::middleware('firebase')->group(function () {
 
 // 全APIに常時かけたければ、bootstrap/app.phpで group('api', ...) を使えば個々に書かなくてOK
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+Route::middleware([FirebaseAuthMiddleware::class])->get('/user', function (Request $request) {
     return $request->user();
 });

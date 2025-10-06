@@ -5,6 +5,7 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Session\Middleware\StartSession;
 use App\Http\Controllers\Auth\FirebaseLoginController;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 
 Route::get('/env-check', function () {
     return response()->json([
@@ -21,8 +22,7 @@ Route::get('/', fn () => response('OK', 200))
 
 require __DIR__.'/auth.php';
 
-Route::prefix('api')
-    ->middleware(['web', 'firebase']) // ← webでセッション開始、firebaseでIDトークン検証
-    ->group(function () {
-        Route::post('/auth/firebase-login', [FirebaseLoginController::class, 'login']);
-    });
+Route::prefix('api')->middleware(['web', 'firebase'])->group(function () {
+    Route::post('/auth/firebase-login', [FirebaseLoginController::class, 'login'])
+        ->withoutMiddleware([VerifyCsrfToken::class]);
+});

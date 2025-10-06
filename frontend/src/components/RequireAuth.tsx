@@ -1,9 +1,10 @@
 // components/RequireAuth.tsx
 'use client';
 
-import { useEffect } from 'react';
-import { useAuthStore } from '@/store/auth';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useEffect } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useAuth } from "@/app/providers/AuthProvider"; 
+
 
 type Props = {
   children: React.ReactNode;
@@ -18,14 +19,14 @@ type Props = {
 };
 
 export default function RequireAuth({ children, enabled = true, fallback }: Props) {
-  const { user, loading } = useAuthStore();
+  const { user, loading } = useAuth(); // ★ZustandではなくAuthProvider由来
   const router = useRouter();
   const pathname = usePathname();
   const search = useSearchParams()?.toString();
 
   useEffect(() => {
     if (!enabled) return;
-    if (loading) return; // まずはhydrateの完了待ち
+    if (loading) return; // Firebaseの確定を待つ
     if (!user) {
       const next = search ? `${pathname}?${search}` : pathname;
       router.replace(`/login?next=${encodeURIComponent(next)}`);
@@ -34,14 +35,11 @@ export default function RequireAuth({ children, enabled = true, fallback }: Prop
 
   if (!enabled) return <>{children}</>;
 
-  // 初回hydrate中 or 未ログイン判定中はフォールバック
-  if (loading || !user) {
-    return (
-      <div className="p-6 text-gray-600">
-        {fallback ?? '読み込み中…'}
-      </div>
-    );
-  }
+  // ここでの表示制御：
+  // - loading中はフォールバック表示
+  // - !user のときは redirect 中なので何も描かない（チラつき防止）
+  if (loading) return <div className="p-6 text-gray-600">{fallback ?? "読み込み中…"}</div>;
+  if (!user) return null;
 
   return <>{children}</>;
 }

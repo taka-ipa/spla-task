@@ -30,10 +30,10 @@ export default function LoginPage() {
     try {
       if (process.env.NEXT_PUBLIC_AUTH_PROVIDER === "firebase") {
         await authAdapter.signIn(email, password);
-        await goNext();
+        router.push(nextPath); // ここだけでOK！
       } else {
         await loginLaravel(email, password);
-        await goNext();
+        await goNext(); // Laravelの時だけhydrate()必要
       }
     } catch (err: any) {
       const msg =
@@ -48,8 +48,8 @@ export default function LoginPage() {
   const handleGoogle = async () => {
     setError("");
     try {
-      await authAdapter.signInWithGoogle(); // 👈 これでGoogleログイン
-      await goNext();
+      await authAdapter.signInWithGoogle();
+      router.push(nextPath);
     } catch (err: any) {
       const msg =
         err?.response?.data?.message ??
