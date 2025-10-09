@@ -12,57 +12,75 @@ use Kreait\Firebase\JWT\IdTokenVerifier;
 class FirebaseAuthMiddleware
 {
     public function handle(Request $request, Closure $next)
-    {
-        $idToken = $request->bearerToken();
-        if (!$idToken) {
-            return response()->json(['message' => 'Missing bearer token'], 401);
+{
+    $idToken = $request->bearerToken();
+    if (!$idToken) {
+        return response()->json(['message' => 'Missing bearer token'], 401);
+    }
+
+    // ① IDトークン検証（401のみ返す）
+    try {
+        // プロジェクトIDは.envから必須
+        $projectId = env('FIREBASE_PROJECT_ID');
+        if (!$projectId) {
+            // 設定不備はサーバ側の問題なので500にするのが本来だが、
+            // 運用を優先して401でも可。ここでは500にしておく。
+            return response()->json(['message' => 'Server misconfigured (FIREBASE_PROJECT_ID)'], 500);
         }
 
-        // ① IDトークン検証（ここだけ401）
-        try {
-            $verifier = IdTokenVerifier::createWithProjectId(env('FIREBASE_PROJECT_ID'));
-            $token    = $verifier->verifyIdToken($idToken);
-        } catch (\Throwable $e) {
-            Log::error('firebase-login verify failed', ['error' => $e->getMessage()]);
-            return response()->json(['message' => 'Invalid Firebase token'], 401);
+        $verifier = IdTokenVerifier::createWithProjectId($projectId);
+        $tokenObj = $verifier->verifyIdToken($idToken); // 署名/iss/aud/exp等も検証される
+
+    } catch (\Throwable $e) {
+        // 検証失敗は401
+        \Log::warning('firebase idToken verify failed', ['error' => $e->getMessage()]);
+        return response()->json(['message' => 'Invalid Firebase token'], 401);
+    }
+
+    // ② claims 抽出（堅牢関数そのまま活用）
+    [$uid, $email, $claims] = $this->extractClaimsStrong($tokenObj, $idToken);
+    if (!$uid) {
+        return response()->json(['message' => 'Firebase UID not found'], 401);
+    }
+
+    // 任意：メール未検証ユーザーを弾きたい場合
+    // if (($claims['email_verified'] ?? false) !== true) {
+    //     return response()->json(['message' => 'Email not verified'], 403);
+    // }
+
+    // ③ ユーザーJIT & ログイン（DB/認証エラーは500）
+    try {
+        // 既存優先：firebase_uid → email
+        $user = User::where('firebase_uid', $uid)->first();
+        if (!$user && $email) {
+            $user = User::where('email', $email)->first();
         }
 
-        // ② claims 抽出
-        [$uid, $email, $claims] = $this->extractClaimsStrong($token, $idToken);
-        Log::info('firebase-login claims', ['uid' => $uid, 'email' => $email, 'claims' => $claims]);
-
-        if (!$uid) {
-            return response()->json(['message' => 'Firebase UID not found'], 401);
-        }
-
-        // ③ DB操作（失敗は500）
-        try {
-            $user = User::where('firebase_uid', $uid)->first();
-            if (!$user && $email) {
-                $user = User::where('email', $email)->first();
+        if ($user) {
+            // 片付け：firebase_uid が空なら紐付け
+            if (empty($user->firebase_uid)) {
+                $user->firebase_uid = $uid;
+                $user->save();
             }
-
-            if ($user) {
-                if (empty($user->firebase_uid)) {
-                    $user->firebase_uid = $uid;
-                    $user->save();
-                }
-            } else {
-                $user = User::create([
-                    'firebase_uid' => $uid,
-                    'email'        => $email,
-                    'name'         => $email ? strtok($email, '@') : 'FirebaseUser',
-                    'password'     => bcrypt(str()->random(40)),
-                ]);
-            }
-
-            Auth::login($user, true);
-        } catch (\Throwable $e) {
-            Log::error('firebase-login user attach failed', ['error' => $e->getMessage()]);
-            return response()->json(['message' => 'Login failed'], 500);
+        } else {
+            $user = User::create([
+                'firebase_uid' => $uid,
+                'email'        => $email,
+                // displayName 相当が token の name に載ることがある
+                'name'         => $claims['name'] ?? ($email ? strtok($email, '@') : 'FirebaseUser'),
+                'password'     => bcrypt(str()->random(40)), // ダミー
+            ]);
         }
 
-        return $next($request);
+        Auth::login($user, true); // remember=true
+        // 任意：明示的にガード指定したいなら Auth::guard('web')->login($user, true);
+
+    } catch (\Throwable $e) {
+        \Log::error('firebase-login user attach failed', ['error' => $e->getMessage()]);
+        return response()->json(['message' => 'Login failed'], 500);
+    }
+
+    return $next($request);
     }
 
     private function extractClaimsStrong(object $token, string $raw): array

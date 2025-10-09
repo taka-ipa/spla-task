@@ -1,10 +1,10 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../providers/AuthProvider";
 import { api } from "@/lib/api";
 
-type Me = { id: number; email?: string | null; /* 必要に応じて */ };
+type Me = { id: number; name?: string | null; email?: string | null; /* 必要に応じて */ };
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -26,15 +26,25 @@ export default function DashboardPage() {
     }
   }, [loading, user]);
 
+  // ★ 表示名の決定ロジック（優先度：Firebase → Laravel name → Laravel email）
+  const displayName = useMemo(() => {
+    return (
+      user?.displayName ||
+      me?.name ||
+      me?.email ||
+      "ゲスト"
+    );
+  }, [user?.displayName, me?.name, me?.email]);
+
   if (loading || (!user && !err)) return <div className="p-4">読み込み中…</div>;
   if (err) return <div className="p-4 text-red-600">エラー: {err}</div>;
-  if (!me) return <div className="p-4">ユーザー情報取得中…</div>;
 
   return (
     <main className="p-6 space-y-4">
       <h1 className="text-2xl font-bold">ダッシュボード</h1>
-      <p>ようこそ！ユーザーID: {me.id}</p>
-      {/* ここにカードやグラフなど足していく */}
+      <p className="text-lg">ようこそ、<span className="font-semibold">{displayName}</span> さん！</p>
+
+      {/* ここにカードやグラフを置いていく */}
     </main>
   );
 }
