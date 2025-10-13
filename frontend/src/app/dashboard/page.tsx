@@ -3,8 +3,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../providers/AuthProvider";
 import { api } from "@/lib/api";
-
-type Me = { id: number; name?: string | null; email?: string | null; /* 必要に応じて */ };
+import { Me } from "@/types/user";
 
 export default function DashboardPage() {
   const router = useRouter();
