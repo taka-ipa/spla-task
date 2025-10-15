@@ -19,8 +19,11 @@ class Task extends Model
     ];
 
     protected $casts = [
-        'is_active' => 'boolean',
-    ];
+    'is_active'  => 'boolean',
+    'created_at' => 'datetime',
+    'updated_at' => 'datetime',
+    'deleted_at' => 'datetime',
+];
 
     public function user()
     {

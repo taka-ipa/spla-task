@@ -22,7 +22,7 @@ return new class extends Migration {
             $table->softDeletes();
 
             // よく使うカラムのインデックス
-            $table->index(['user_id', 'created_at']);
+            $table->index(['user_id', 'is_active']);
         });
     }
 
