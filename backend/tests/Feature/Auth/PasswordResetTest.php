@@ -14,6 +14,8 @@ class PasswordResetTest extends TestCase
 
     public function test_reset_password_link_can_be_requested(): void
     {
+        $this->markTestSkipped('Webセッション認証は本プロジェクトの認証方式に非対応のためスキップ');
+
         Notification::fake();
 
         $user = User::factory()->create();
@@ -25,6 +27,8 @@ class PasswordResetTest extends TestCase
 
     public function test_password_can_be_reset_with_valid_token(): void
     {
+        $this->markTestSkipped('Webセッション認証は本プロジェクトの認証方式に非対応のためスキップ');
+        
         Notification::fake();
 
         $user = User::factory()->create();

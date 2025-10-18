@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\ServiceProvider;
+use App\Models\Task;
+use App\Policies\TaskPolicy;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -29,6 +31,6 @@ class AppServiceProvider extends ServiceProvider
     }
 
     protected $policies = [
-    \App\Models\Task::class => \App\Policies\TaskPolicy::class,
+        Task::class => TaskPolicy::class,
 ];
 }

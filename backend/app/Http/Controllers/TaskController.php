@@ -21,21 +21,20 @@ class TaskController extends Controller
      */
     public function index(Request $request)
     {
-        // ログインユーザーのタスクのみ
+        // 自分のタスクだけ（User::tasks() リレーションでスコープ）
         $query = $request->user()
             ->tasks()
             ->orderByDesc('id');
 
-        // 任意: is_active フィルタ
+        // 任意: is_active フィルタ（必要なら残す）
         if ($request->has('is_active')) {
             $query->where('is_active', $request->boolean('is_active'));
         }
 
-        // ページネーション対応（15件/ページ）
-        $tasks = $query->paginate(15);
-
-        // Resource で返すと data/meta/links が揃う
-        return TaskResource::collection($tasks);
+        // ページネーションで返す（フロントでmeta/links使える）
+        return \App\Http\Resources\TaskResource::collection(
+            $query->paginate(15)
+        );
     }
 
     /**

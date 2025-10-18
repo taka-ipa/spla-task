@@ -53,13 +53,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/task-results/summary', [TaskResultSummaryController::class, 'index']);
 });
 
-// 一部だけ試すパターン
 Route::middleware('firebase')->group(function () {
-    Route::get('/tasks', [TaskController::class, 'index']);
+    // ✅ tasksはapiResourceに一本化（showも許可）
+    Route::apiResource('tasks', TaskController::class);
+
     Route::get('/task-results', [TaskResultController::class, 'index']);
     Route::post('/task-results', [TaskResultController::class, 'store']);
     Route::get('/task-results/summary', [TaskResultSummaryController::class, 'index']);
-    Route::apiResource('tasks', TaskController::class)->except(['show']);
 });
 
 // 全APIに常時かけたければ、bootstrap/app.phpで group('api', ...) を使えば個々に書かなくてOK
