@@ -4,6 +4,8 @@ import { GeistMono } from "geist/font/mono";
 import "./globals.css";
 import AuthInit from "@/components/AuthInit";
 import AuthProvider from "./providers/AuthProvider";
+import { Toaster } from "sonner";
+
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -16,6 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${GeistSans.variable} ${GeistMono.variable} antialiased`}>
         <AuthInit />
         <AuthProvider>{children}</AuthProvider>
+        <Toaster position="top-center" richColors />
       </body>
     </html>
   );
