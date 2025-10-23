@@ -1,6 +1,6 @@
 export type Task = {
   id: number;
-  user_id: number;
+  user_id?: number; // ← ? でオプショナルに
   title: string;
   icon?: string | null;
   notes?: string | null;

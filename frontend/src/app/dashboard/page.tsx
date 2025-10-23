@@ -42,8 +42,6 @@ export default function DashboardPage() {
     <main className="p-6 space-y-4">
       <h1 className="text-2xl font-bold">ダッシュボード</h1>
       <p className="text-lg">ようこそ、<span className="font-semibold">{displayName}</span> さん！</p>
-
-      {/* ここにカードやグラフを置いていく */}
     </main>
   );
 }
